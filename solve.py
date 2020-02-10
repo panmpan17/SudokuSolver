@@ -52,10 +52,10 @@ class Cell:
             else:
                 print("\x1b[0;37;44m", end="")
 
-            if line == 0 or line == 2:
-                print("   \x1b[0m", end="")
+            if line <= 1 or line > 2:
+                print("     \x1b[0m", end="")
             else:
-                print(f" {self.number} \x1b[0m", end="")
+                print(f"  {self.number}  \x1b[0m", end="")
         else:
             texts = [" "] * 9
             for num in self.posibles:
@@ -66,11 +66,15 @@ class Cell:
                 print(highlight, end="")
 
             if line == 0:
-                print(text[0: 3], end="\x1b[0m")
+                print("     ", end="\x1b[0m")
             elif line == 1:
-                print(text[3: 6], end="\x1b[0m")
-            else:
-                print(text[6:], end="\x1b[0m")
+                print(" " + text[0: 3] + " ", end="\x1b[0m")
+            elif line == 2:
+                print(" " + text[3: 6] + " ", end="\x1b[0m")
+            elif line == 3:
+                print(" " + text[6:] + " ", end="\x1b[0m")
+            elif line == 4:
+                print("     ", end="\x1b[0m")
 
 
 class Solver:
@@ -139,6 +143,12 @@ class Solver:
             for x in range(0, 9):
                 self.cells[self.get_index(x, y)].print(2)
             print()
+            for x in range(0, 9):
+                self.cells[self.get_index(x, y)].print(3)
+            print()
+            for x in range(0, 9):
+                self.cells[self.get_index(x, y)].print(4)
+            print()
 
     def highlight_print(self, cell):
         for y in range(0, 9):
@@ -151,6 +161,7 @@ class Solver:
                 else:
                     _cell.print(0)
             print()
+
             for x in range(0, 9):
                 _cell = self.cells[self.get_index(x, y)]
                 if (x, y) == cell.id:
@@ -160,6 +171,7 @@ class Solver:
                 else:
                     _cell.print(1)
             print()
+
             for x in range(0, 9):
                 _cell = self.cells[self.get_index(x, y)]
                 if (x, y) == cell.id:
@@ -168,6 +180,26 @@ class Solver:
                     _cell.print(2, "\x1b[0;37;43m")
                 else:
                     _cell.print(2)
+            print()
+
+            for x in range(0, 9):
+                _cell = self.cells[self.get_index(x, y)]
+                if (x, y) == cell.id:
+                    _cell.print(3, "\x1b[1;37;41m")
+                elif self.get_index(x, y) in cell.neighbors:
+                    _cell.print(3, "\x1b[0;37;43m")
+                else:
+                    _cell.print(3)
+            print()
+
+            for x in range(0, 9):
+                _cell = self.cells[self.get_index(x, y)]
+                if (x, y) == cell.id:
+                    _cell.print(4, "\x1b[1;37;41m")
+                elif self.get_index(x, y) in cell.neighbors:
+                    _cell.print(4, "\x1b[0;37;43m")
+                else:
+                    _cell.print(4)
             print()
 
     def generate_posibles(self):
@@ -187,21 +219,41 @@ class Solver:
                         num_posible[num] = []
                     num_posible[num].append(cell.id)
 
+        has_changed = False
         for num, cells in num_posible.items():
             if len(cells) == 1:
                 self.cells[self.get_index(cells[0])].change_to(num)
+                has_changed = True
+        return has_changed
 
     def check_unique(self):
+        has_changed = False
         for i in range(0, 9):
-            self.check_unique_cells(self.cells[i * 9: i * 9 + 9])
+            has_changed = has_changed or self.check_unique_cells(
+                self.cells[i * 9: i * 9 + 9])
+
+        for i in range(0, 9):
+            has_changed = has_changed or self.check_unique_cells(list(
+                [self.cells[(e * 9) + i] for e in range(0, 9)]))
+
+        for x in range(0, 3):
+            for y in range(0, 3):
+                has_changed = has_changed or self.check_unique_cells(list(
+                    [self.cells[i] for i in self.get_block(x, y)]))
+
+        return has_changed
 
 
 if __name__ == "__main__":
-    with open("puzzles/5.txt") as file:
+    with open("puzzles/14.txt") as file:
         solver = Solver()
         solver.read(file.read())
         solver.generate_posibles()
-        solver.check_unique()
+
+        while True:
+            if not solver.check_unique():
+                break
+
         solver.print_map()
 
     # solver = Solver()
